@@ -1,4 +1,4 @@
-param([long]$RunId = 0, [switch]$Download, [switch]$Dispatch)
+param([long]$RunId = 0, [switch]$Download, [switch]$Dispatch, [switch]$JobLogs, [switch]$Cancel)
 $ErrorActionPreference = 'Stop'
 # Credentials stay in memory and are never printed or persisted.
 $credentialLines = "protocol=https`nhost=github.com`n`n" | git -c http.https://github.com.proxy= credential fill
@@ -24,12 +24,27 @@ if ($RunId -eq 0) {
     $RunId = $latest.workflow_runs[0].id
 }
 if ($RunId -lt 1) { throw 'Invalid run ID' }
+if ($Cancel) {
+    Invoke-RestMethod -Method Post -Uri "$repoApi/actions/runs/$RunId/cancel" -Headers $requestHeaders
+    Write-Output 'Run cancellation requested'
+}
 $run = Invoke-RestMethod "$repoApi/actions/runs/$RunId" -Headers $requestHeaders
 $jobs = Invoke-RestMethod "$repoApi/actions/runs/$RunId/jobs" -Headers $requestHeaders
 $run | Select-Object id, status, conclusion, html_url | ConvertTo-Json -Compress
 foreach ($job in $jobs.jobs) {
     $job | Select-Object id, name, status, conclusion | ConvertTo-Json -Compress
-    $job.steps | Select-Object name, status, conclusion | ConvertTo-Json -Compress
+    $job.steps | Select-Object name, status, conclusion, started_at, completed_at | ConvertTo-Json -Compress
+    if ($JobLogs) {
+        $logDir = Join-Path $PSScriptRoot "../build/runs/$RunId"
+        New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+        $logFile = Join-Path $logDir "job-$($job.id).log"
+        try {
+            Invoke-WebRequest "$repoApi/actions/jobs/$($job.id)/logs" -Headers $requestHeaders -OutFile $logFile
+            Get-Content -LiteralPath $logFile -Tail 60
+        } catch {
+            Write-Output "Job log not available yet: HTTP $([int]$_.Exception.Response.StatusCode)"
+        }
+    }
     if ($job.conclusion -eq 'failure') {
         $checkId = ($job.check_run_url -split '/')[-1]
         $annotations = Invoke-RestMethod "$repoApi/check-runs/$checkId/annotations" -Headers $requestHeaders

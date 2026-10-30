@@ -190,7 +190,11 @@ struct TranslationView: View {
         checking = true
         status = "正在检查 \(selected.rawValue) 资源…"
         checkTask = Task { @MainActor in
+            #if targetEnvironment(simulator)
+            let state: LanguageAvailability.Status = .unsupported
+            #else
             let state = await LanguageAvailability().status(from: selected.source, to: selected.target)
+            #endif
             guard !Task.isCancelled, id == checkID else { return }
             checking = false
             installed = state == .installed

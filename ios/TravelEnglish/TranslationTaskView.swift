@@ -48,6 +48,11 @@ struct TranslationTaskView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("中英翻译").navigationBarTitleDisplayMode(.inline)
             .translationTask(configuration) { @MainActor session in
+                #if targetEnvironment(simulator)
+                finished = true
+                detail = "模拟器仅检查界面交互。系统翻译需在真实 iPhone 上验证。"
+                return
+                #else
                 started = true
                 detail = request.operation == .prepare
                     ? "正在准备语言资源。如系统弹出下载提示，请确认并等待完成。"
@@ -74,6 +79,7 @@ struct TranslationTaskView: View {
                     diagnostic = "\(error.domain) · \(error.code)\n\(error.localizedDescription)"
                 }
                 finished = true
+                #endif
             }
             .task {
                 try? await Task.sleep(for: .seconds(12))
