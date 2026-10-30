@@ -1,0 +1,49 @@
+name: iOS validation IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 25
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record build environment
+        run: |
+          set -euo pipefail
+          mkdir -p build/artifacts
+          xcodebuild -version | tee build/artifacts/build-environment.txt
+          sw_vers | tee -a build/artifacts/build-environment.txt
+          git rev-parse HEAD | tee -a build/artifacts/build-environment.txt
+      - name: Install pinned project generator
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip -o "$RUNNER_TEMP/xcodegen.zip"
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP/xcodegen-tool"
+          "$RUNNER_TEMP/xcodegen-tool/xcodegen/bin/xcodegen" --version | tee -a build/artifacts/build-environment.txt
+          "$RUNNER_TEMP/xcodegen-tool/xcodegen/bin/xcodegen" generate --spec ios/project.json --project ios
+      - name: Test IPA packaging
+        run: python3 -m unittest discover -s tests -v
+      - name: Compile simulator target
+        run: |
+          set -euo pipefail
+          xcodebuild -project ios/TravelEnglish.xcodeproj -scheme TravelEnglish -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/simulator CODE_SIGNING_ALLOWED=NO build > build/artifacts/simulator-build.log 2>&1
+      - name: Compile unsigned device target
+        run: |
+          set -euo pipefail
+          xcodebuild -project ios/TravelEnglish.xcodeproj -scheme TravelEnglish -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO ARCHS=arm64 build > build/artifacts/device-build.log 2>&1
+          python3 scripts/package_ipa.py build/device/Build/Products/Release-iphoneos/TravelEnglish.app build/artifacts/TravelEnglish-unsigned.ipa
+      - name: Upload IPA and diagnostic logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TravelEnglish-validation-${{ github.run_number }}
+          path: build/artifacts/
+          retention-days: 14
+          if-no-files-found: warn
