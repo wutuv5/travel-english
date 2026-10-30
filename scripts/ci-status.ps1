@@ -1,4 +1,4 @@
-param([long]$RunId = 0, [switch]$Download)
+param([long]$RunId = 0, [switch]$Download, [switch]$Dispatch)
 $ErrorActionPreference = 'Stop'
 # Credentials stay in memory and are never printed or persisted.
 $credentialLines = "protocol=https`nhost=github.com`n`n" | git -c http.https://github.com.proxy= credential fill
@@ -14,6 +14,10 @@ $requestHeaders = @{
     'X-GitHub-Api-Version' = '2022-11-28'
 }
 $repoApi = 'https://api.github.com/repos/wutuv5/travel-english'
+if ($Dispatch) {
+    Invoke-RestMethod -Method Post -Uri "$repoApi/actions/workflows/ios-validation.yml/dispatches" -Headers $requestHeaders -Body '{"ref":"main"}' -ContentType 'application/json'
+    Write-Output 'Workflow dispatch submitted'
+}
 if ($RunId -eq 0) {
     $latest = Invoke-RestMethod "$repoApi/actions/workflows/ios-validation.yml/runs?per_page=1" -Headers $requestHeaders
     if (!$latest.workflow_runs) { throw 'No workflow runs found' }

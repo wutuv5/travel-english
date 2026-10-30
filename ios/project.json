@@ -2,7 +2,9 @@
   "name": "TravelEnglish",
   "options": {
     "bundleIdPrefix": "local.travelenglish",
-    "deploymentTarget": { "iOS": "18.0" },
+    "deploymentTarget": {
+      "iOS": "18.0"
+    },
     "developmentLanguage": "zh-Hans"
   },
   "settings": {
@@ -10,15 +12,17 @@
       "SWIFT_VERSION": "5.0",
       "TARGETED_DEVICE_FAMILY": "1",
       "CODE_SIGNING_ALLOWED": "NO",
-      "MARKETING_VERSION": "0.1.0",
-      "CURRENT_PROJECT_VERSION": "1"
+      "MARKETING_VERSION": "0.1.1",
+      "CURRENT_PROJECT_VERSION": "2"
     }
   },
   "targets": {
     "TravelEnglish": {
       "type": "application",
       "platform": "iOS",
-      "sources": ["TravelEnglish"],
+      "sources": [
+        "TravelEnglish"
+      ],
       "settings": {
         "base": {
           "PRODUCT_BUNDLE_IDENTIFIER": "local.travelenglish.app",
@@ -30,13 +34,43 @@
           "INFOPLIST_KEY_UISupportedInterfaceOrientations": "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         }
       }
+    },
+    "TravelEnglishUITests": {
+      "type": "bundle.ui-testing",
+      "platform": "iOS",
+      "sources": [
+        "TravelEnglishUITests"
+      ],
+      "dependencies": [
+        {
+          "target": "TravelEnglish"
+        }
+      ],
+      "settings": {
+        "base": {
+          "GENERATE_INFOPLIST_FILE": "YES"
+        }
+      }
     }
   },
   "schemes": {
     "TravelEnglish": {
-      "build": { "targets": { "TravelEnglish": "all" } },
-      "run": { "config": "Debug" },
-      "archive": { "config": "Release" }
+      "build": {
+        "targets": {
+          "TravelEnglish": "all"
+        }
+      },
+      "run": {
+        "config": "Debug"
+      },
+      "test": {
+        "targets": [
+          "TravelEnglishUITests"
+        ]
+      },
+      "archive": {
+        "config": "Release"
+      }
     }
   }
 }

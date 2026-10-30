@@ -34,6 +34,17 @@ jobs:
         run: |
           set -euo pipefail
           xcodebuild -project ios/TravelEnglish.xcodeproj -scheme TravelEnglish -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/simulator CODE_SIGNING_ALLOWED=NO build > build/artifacts/simulator-build.log 2>&1
+      - name: Run interaction regression tests
+        run: |
+          set -euo pipefail
+          DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for runtime,items in devices.items() if "iOS" in runtime for d in items if "iPhone" in d["name"]))')
+          xcodebuild -project ios/TravelEnglish.xcodeproj -scheme TravelEnglish -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE_ID" -parallel-testing-enabled NO -resultBundlePath build/InteractionTests.xcresult CODE_SIGNING_ALLOWED=NO test > build/artifacts/interaction-tests.log 2>&1
+      - name: Export UI test screenshots
+        if: always()
+        run: |
+          if [ -d build/InteractionTests.xcresult ]; then
+            xcrun xcresulttool export attachments --path build/InteractionTests.xcresult --output-path build/artifacts/screenshots || true
+          fi
       - name: Compile unsigned device target
         run: |
           set -euo pipefail
