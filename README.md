@@ -6,7 +6,7 @@
 
 已开始 G1/G2 技术验证版本：SwiftUI 中文界面、Apple Translation 资源准备与中英双向设备端翻译入口、云端构建流程和待重签 IPA 打包工具。
 
-**还未经过 Xcode 编译、iPhone 安装或飞行模式实测，G1/G2 尚未通过。** 当前没有生成 IPA；课程、录音、评分、AI 对话、后端与月度预算执行器尚未开发。不能把这个验证版当作完整学习应用。
+**已通过 Xcode 模拟器和真机目标编译，生成待重签 IPA；iPhone 安装和飞行模式实测尚未执行，G1/G2 尚未完整通过。** 首次成功构建见 [Actions 运行记录](https://github.com/wutuv5/travel-english/actions/runs/41012750823)。课程、录音、评分、AI 对话、后端与月度预算执行器尚未开发。不能把这个验证版当作完整学习应用。
 
 ## 文件
 
@@ -14,6 +14,7 @@
 - `ios/TravelEnglish/`：原生 SwiftUI 验证应用，无在线翻译回退、无密钥。
 - `.github/workflows/ios-validation.yml`：手动触发的 macOS 构建，编译模拟器和真机目标，输出日志和待重签 IPA。
 - `scripts/package_ipa.py`：校验 arm64 iPhoneOS Mach-O，再打包 Payload 并计算 SHA256，不负责签名。
+- `scripts/ci-status.ps1`：利用系统凭据查看本仓库构建状态；加 `-Download` 下载产物并校验 IPA，不打印或持久化凭据。
 - `tests/`：IPA 打包工具测试。
 - [首次构建与实机验证](docs/06-首次构建与实机验证.md)：当前需要的操作。
 
